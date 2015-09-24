@@ -37,7 +37,7 @@ eventStoreObjects.onConnect = function(){
         try{
           deltas = JSON.parse(process.argv[4]);
         } catch(e){
-          console.log(e);
+          
           deltas = process.argv[4];
         }
         eventStoreObjects.append(process.argv[3], 'del', deltas, function() {

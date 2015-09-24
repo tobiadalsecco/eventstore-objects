@@ -49,7 +49,7 @@ function buildPreviousObjectState(id, eventNumber, done){
 
 function findEventsNearestSnapshot(streamId, eventNumber, done){
   console.log('will find nearest snapshot:');
-  var snapShotNumber = Math.floor(eventNumber / maxEventsBetweenSnapshots);
+  var snapShotNumber = Math.floor(eventNumber / maxEventsBetweenSnapshots) - 1;
   tryFindSnapshot(streamId, snapShotNumber, eventNumber, function(err, snapshot){
     if(done) done(null, snapshot);
   });
@@ -63,10 +63,10 @@ function tryFindSnapshot(streamId, snapShotNumber, eventNumber, done){
       if(done) done(null, null);
     } else if(snapshot.events[0].data.__eventNumber > eventNumber){
       snapShotNumber--;
-      tryFindSnapshot(streamId, snapShotNumber, done);
+      tryFindSnapshot(streamId, snapShotNumber, eventNumber, done);
     } else {
-      console.log('snapshot found!');
-      console.log(snapshot);
+      console.log('## snapshot found!');
+      console.log(snapshot.events[0].data);
       if(done) done(null, snapshot);
     }
   });
