@@ -3,11 +3,15 @@ var http = require('http');
 
 
 // ------------ CONFIGURATION
+
 var config, options, connection, credentials, events, maxEventsBetweenSnapshots;
-
 var snapshotSuffix = '__snapshot';
-
+var snapShotEvent = 'snapshot';
 var maxEventsFetch = 4096; // the maximum number of events that EventStore db (or node module) seems to support
+
+
+
+// ------------ CONNECTION - RELATED FUNCTIONS
 
 function connect(){
   var connectionOptions = {
@@ -27,60 +31,7 @@ function disconnect(){
   connection.close();
 }
 
-//---
 
-
-function buildPreviousObjectState(id, eventNumber, done){
-  console.log('Building previous object state');
-  findEventsNearestSnapshot(id, eventNumber, function(err, snapshot){
-    if(!snapshot){
-      console.log('now building from ZERO + events');
-      createObjectFromEvents(id, 0, eventNumber + 1, null, false, function(err, result){
-        if(done) done(null, result);
-      });
-    } else {
-      var eventNumberInSnapshot = parseInt(snapshot.events[0].data.__eventNumber);
-      createObjectFromEvents(id, eventNumberInSnapshot, eventNumber - eventNumberInSnapshot + 1, snapshot.events[0].data, false, function(err, result){
-        if(done) done(null, result);
-      });
-    }
-  });
-}
-
-function findEventsNearestSnapshot(streamId, eventNumber, done){
-  console.log('will find nearest snapshot:');
-  var snapShotNumber = Math.floor(eventNumber / maxEventsBetweenSnapshots) - 1;
-  tryFindSnapshot(streamId, snapShotNumber, eventNumber, function(err, snapshot){
-    if(done) done(null, snapshot);
-  });
-}
-
-function tryFindSnapshot(streamId, snapShotNumber, eventNumber, done){
-  console.log('finding nearest snapshot try...' + snapShotNumber);
-  readSnapshot(streamId, snapShotNumber, function(snapshot){
-    if(snapshot.events.length == 0){
-      console.log('no snapshot!');
-      if(done) done(null, null);
-    } else if(snapshot.events[0].data.__eventNumber > eventNumber){
-      snapShotNumber--;
-      tryFindSnapshot(streamId, snapShotNumber, eventNumber, done);
-    } else {
-      console.log('## snapshot found!');
-      console.log(snapshot.events[0].data);
-      if(done) done(null, snapshot);
-    }
-  });
-}
-
-function checkObjectStreamHead(snapshotId, done) {
-  //console.log('check snapshot: ' + snapshotId + snapshotSuffix);
-  doRequest('/streams/' + snapshotId + snapshotSuffix + '/head/backward/1?format=json', function(err, snapshot) {
-    //console.log(err, snapshot);
-    done(err, snapshot);
-  });
-}
-
-//---
 
 // ------------ OBJECT - RELATED FUNCTIONS
 
@@ -136,6 +87,23 @@ function buildCurrentObject(id, done){
   });
 }
 
+function buildPreviousObjectState(id, eventNumber, done){
+  console.log('Building previous object state');
+  findEventsNearestSnapshot(id, eventNumber, function(err, snapshot){
+    if(!snapshot){
+      console.log('now building from ZERO + events');
+      createObjectFromEvents(id, 0, eventNumber + 1, null, false, function(err, result){
+        if(done) done(null, result);
+      });
+    } else {
+      var eventNumberInSnapshot = parseInt(snapshot.events[0].data.__eventNumber);
+      createObjectFromEvents(id, eventNumberInSnapshot, eventNumber - eventNumberInSnapshot + 1, snapshot.events[0].data, false, function(err, result){
+        if(done) done(null, result);
+      });
+    }
+  });
+}
+
 function createObjectFromEvents(id, from, max, initialObject, checkSnapshot, done) {
   console.log('creating object from ', from, ' walking ', max, ' events');
   initialObject = initialObject || null;
@@ -173,6 +141,14 @@ function createObjectFromEvents(id, from, max, initialObject, checkSnapshot, don
   );
 }
 
+function checkObjectStreamHead(snapshotId, done) {
+  //console.log('check snapshot: ' + snapshotId + snapshotSuffix);
+  doRequest('/streams/' + snapshotId + snapshotSuffix + '/head/backward/1?format=json', function(err, snapshot) {
+    //console.log(err, snapshot);
+    done(err, snapshot);
+  });
+}
+
 
 
 // ------------ SNAPSHOT - RELATED FUNCTIONS
@@ -187,7 +163,7 @@ function checkObjectSnapshot(snapshotId, done) {
 
 function writeSnapshot(id, data, from, done) {
   //console.log('faço snapshot')
-  appendEvent(id + snapshotSuffix, 'snapshot', data, function(err) {
+  appendEvent(id + snapshotSuffix, snapShotEvent, data, function(err) {
     done(null, true);
   });
 }
@@ -205,37 +181,44 @@ function readSnapshot(id, snapshotEventNumber, done){
   );
 }
 
+function findEventsNearestSnapshot(streamId, eventNumber, done){
+  console.log('will find nearest snapshot:');
+  var snapShotNumber = Math.floor(eventNumber / maxEventsBetweenSnapshots) - 1;
+  tryFindSnapshot(streamId, snapShotNumber, eventNumber, function(err, snapshot){
+    if(done) done(null, snapshot);
+  });
+}
+
+function tryFindSnapshot(streamId, snapShotNumber, eventNumber, done){
+  console.log('finding nearest snapshot try...' + snapShotNumber);
+  readSnapshot(streamId, snapShotNumber, function(snapshot){
+    if(snapshot.events.length == 0){
+      console.log('no snapshot!');
+      if(done) done(null, null);
+    } else if(snapshot.events[0].data.__eventNumber > eventNumber){
+      snapShotNumber--;
+      tryFindSnapshot(streamId, snapShotNumber, eventNumber, done);
+    } else {
+      console.log('## snapshot found!');
+      //console.log(snapshot.events[0].data);
+      if(done) done(null, snapshot);
+    }
+  });
+}
+
 
 
 // ------------ EVENT/STREAM - RELATED FUNCTIONS
 
 function appendEvent(id, eventType, data, done) {
+  console.log('id:', id, 'eventType:', eventType, 'data:', data);
   var newEvents = [{
     eventId: EventStoreClient.Connection.createGuid(),
-    eventType: events[eventType],
+    eventType: eventType,
     data: data
   }];
   connection.writeEvents(id, EventStoreClient.ExpectedVersion.Any, false, newEvents, credentials, function(completed) {
     done(null);
-  });
-}
-
-function batchEvents(id, deltas, done) {
-  if (deltas.length == 0) {
-    //console.log('-- no deltas!');
-    return;
-  }
-  var newEvents = [];
-  for (i in deltas) {
-    var newEvent = {
-      eventId: EventStoreClient.Connection.createGuid(),
-      eventType: events[deltas[i].cmd],
-      data: deltas[i].data
-    };
-    newEvents.push(newEvent);
-  }
-  connection.writeEvents(id, EventStoreClient.ExpectedVersion.Any, false, newEvents, credentials, function(completed) {
-    done();
   });
 }
 
@@ -245,19 +228,18 @@ function batchEvents(id, deltas, done) {
 
 function addDeltas(deltas, initialObject){
   var result = initialObject || {};
+  var setEvents = events.set;
+  var delEvents = events.del;
   for (var i in deltas) {
     var evt = deltas[i];
     var eventType = evt.eventType;
     var data = evt.data;
-    if (eventType == events.set) {
+    if (setEvents.indexOf(eventType) > -1) {
       for (var prop in data) {
         setProperty(prop, data[prop], result);
       }
-    } else if (eventType == events.del) {
-      //console.log('==================> del', data);
+    } else if (delEvents.indexOf(eventType) > -1) {
       deleteProperty(data, result);
-    } else if (eventType == events.open){
-      setProperty('__lastOpened', data, result);
     }
   }
   result.__eventNumber = evt.eventNumber;
@@ -286,21 +268,21 @@ function setNestedProperty(prop, val, target) {
 }
 
 function deleteProperty(prop, target) {
-  console.log('DEL', prop, target);
+  //console.log('DEL', prop, target);
   if (prop instanceof Object) {
     //console.log('e um obj, target: ', target);
     deleteNestedProperty(prop, target);
     return;
   }
   if (!target.hasOwnProperty(prop)) {
-    console.log('NO PROP');
+    //console.log('NO PROP');
     return;
   }
   delete target[prop];
 }
 
 function deleteNestedProperty(prop, target) {
-  console.log('DEL OBJ');
+  //console.log('DEL OBJ');
   for (var p in prop) {
     //console.log('------> p:', p, ' | prop:', prop, ' | prop[p]:', prop[p], ' | target: ', target);
     deleteProperty(prop[p], target[p]);
@@ -308,7 +290,8 @@ function deleteNestedProperty(prop, target) {
 }
 
 
-// ------------ OTHER FUNCTIONS
+
+// ------------ HTTP API FUNCTIONS
 
 /**
  * A simple request, to use when methods are not avaliable in TCP (for instance, stream head)
@@ -332,10 +315,13 @@ function doRequest(path, done) {
   });
 }
 
+
+
+// ------------ STARTING IT UP
+
 var eventStoreObjects = {
   read: buildObject,
   append: appendEvent,
-  appendMany: batchEvents,
   connection: connection,
   connect: connect,
   disconnect: disconnect
@@ -351,5 +337,6 @@ module.exports = function(configs){
   events = configs.events;
   maxEventsBetweenSnapshots = configs.maxEventsBetweenSnapshots;
   snapshotSuffix = configs.snapshotSuffix || snapshotSuffix;
+  snapShotEvent = configs.snapShotEvent || snapShotEvent;
   return eventStoreObjects;
 }
