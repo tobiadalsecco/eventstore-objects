@@ -1,0 +1,42 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/local/bin/node', '/usr/local/bin/npm', 'adduser' ]
+2 info using npm@1.2.15
+3 info using node@v0.12.7
+4 verbose adduser before first PUT { name: 'tobiadalsecco',
+4 verbose adduser   salt: 'XXXXX',
+4 verbose adduser   password_sha: 'XXXXX',
+4 verbose adduser   email: 'tobia.dalsecco@gmail.com',
+4 verbose adduser   _id: 'org.couchdb.user:tobiadalsecco',
+4 verbose adduser   type: 'user',
+4 verbose adduser   roles: [],
+4 verbose adduser   date: '2015-09-24T01:07:40.737Z' }
+5 verbose url raw /-/user/org.couchdb.user:tobiadalsecco
+6 verbose url resolving [ 'https://registry.npmjs.org/',
+6 verbose url resolving   './-/user/org.couchdb.user:tobiadalsecco' ]
+7 verbose url resolved https://registry.npmjs.org/-/user/org.couchdb.user:tobiadalsecco
+8 info trying registry request attempt 1 at 10:07:40 PM
+9 http PUT https://registry.npmjs.org/-/user/org.couchdb.user:tobiadalsecco
+10 http 400 https://registry.npmjs.org/-/user/org.couchdb.user:tobiadalsecco
+11 verbose adduser back [ [Error: Unknown error while authenticating : -/user/org.couchdb.user:tobiadalsecco],
+11 verbose adduser   { ok: false, error: 'Unknown error while authenticating' },
+11 verbose adduser   '{"ok":false,"error":"Unknown error while authenticating"}' ]
+12 error Error: Unknown error while authenticating : -/user/org.couchdb.user:tobiadalsecco
+12 error     at RegClient.<anonymous> (/usr/local/lib/node_modules/npm/node_modules/npm-registry-client/lib/request.js:268:14)
+12 error     at Request.self.callback (/usr/local/lib/node_modules/npm/node_modules/request/main.js:120:22)
+12 error     at Request.emit (events.js:110:17)
+12 error     at Request.<anonymous> (/usr/local/lib/node_modules/npm/node_modules/request/main.js:649:16)
+12 error     at Request.emit (events.js:129:20)
+12 error     at IncomingMessage.<anonymous> (/usr/local/lib/node_modules/npm/node_modules/request/main.js:611:14)
+12 error     at IncomingMessage.emit (events.js:129:20)
+12 error     at _stream_readable.js:908:16
+12 error     at process._tickCallback (node.js:355:11)
+13 error If you need help, you may report this log at:
+13 error     <http://github.com/isaacs/npm/issues>
+13 error or email it to:
+13 error     <npm-@googlegroups.com>
+14 error System Darwin 14.5.0
+15 error command "/usr/local/bin/node" "/usr/local/bin/npm" "adduser"
+16 error cwd /Users/tobia/dev/eventstore-objects
+17 error node -v v0.12.7
+18 error npm -v 1.2.15
+19 verbose exit [ 1, true ]
