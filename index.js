@@ -35,10 +35,10 @@ function disconnect(){
 
 // ------------ OBJECT - RELATED FUNCTIONS
 
-function buildObject(id, headType, headParam, addOpenEvent, openEventData, done) {
+function buildObject(id, headType, headParam, openEvent, openEventData, done) {
   headType = headType || 'head';
   if(headType == 'head'){
-    if(addOpenEvent === true && openEventData){
+    if(openEvent !== null && openEventData !== null){
       //console.log('add open event');
       appendEvent(id, 'open', openEventData, function(err){
         buildCurrentObject(id, done);

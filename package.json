@@ -1,7 +1,7 @@
 {
   "name": "eventstore-objects",
   "version": "1.1.5",
-  "description": "ERROR: No README.md file found!",
+  "description": "A convenient way to handle events sourcing with EventStore DB",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
