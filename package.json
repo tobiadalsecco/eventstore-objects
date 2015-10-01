@@ -12,5 +12,5 @@
     "event-store-client": "0.0.5"
   },
   "devDependencies": {},
-  "repository": ""
+  "repository": "https://github.com/tobiadalsecco/eventstore-objects"
 }
