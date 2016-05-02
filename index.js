@@ -141,9 +141,17 @@ function createObjectFromEvents(id, from, max, initialObject, checkSnapshot, don
   );
 }
 
-function checkObjectStreamHead(snapshotId, done) {
+function getStreamHead(streamId, done) {
   //console.log('check snapshot: ' + snapshotId + snapshotSuffix);
-  doRequest('/streams/' + snapshotId + snapshotSuffix + '/head/backward/1?format=json', function(err, snapshot) {
+  doRequest('/streams/' + streamId + '/head/backward/1?format=json', function(err, snapshot) {
+    //console.log(err, snapshot);
+    done(err, snapshot);
+  });
+}
+
+function getStreamEventByNumber(streamId, eventNumber, done) {
+  //console.log('check snapshot: ' + snapshotId + snapshotSuffix);
+  doRequest('/streams/' + streamId + '/' + eventNumber + '?format=json', function(err, snapshot) {
     //console.log(err, snapshot);
     done(err, snapshot);
   });
@@ -324,7 +332,9 @@ var eventStoreObjects = {
   append: appendEvent,
   connection: connection,
   connect: connect,
-  disconnect: disconnect
+  disconnect: disconnect,
+  getStreamHead: getStreamHead,
+  getStreamEventByNumber: getStreamEventByNumber
 }
 
 module.exports = function(configs){
