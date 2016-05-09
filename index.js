@@ -142,19 +142,41 @@ function createObjectFromEvents(id, from, max, initialObject, checkSnapshot, don
 }
 
 function getStreamHead(streamId, done) {
-  //console.log('check snapshot: ' + snapshotId + snapshotSuffix);
-  doRequest('/streams/' + streamId + '/head/backward/1?format=json', function(err, snapshot) {
-    //console.log(err, snapshot);
-    done(err, snapshot);
+  doRequest('/streams/' + streamId + '/head/backward/1?format=json', function(err, streamHead) {
+    if (!streamHead) {
+      done(null, null);
+    } else {
+      var str = JSON.parse(streamHead);
+      var evtNum = parseInt(str.entries[0].id.split('/').pop());
+      connection.readStreamEventsBackward(
+        streamId, // stream id 
+        evtNum, // fromEventNumber
+        1, // maxCount
+        false, // resolveLinks
+        false, // requiremaster
+        null,
+        credentials,
+        function(response){ 
+          done(null, response.events[0].data); 
+        }
+      );
+    }
   });
 }
 
 function getStreamEventByNumber(streamId, eventNumber, done) {
-  //console.log('check snapshot: ' + snapshotId + snapshotSuffix);
-  doRequest('/streams/' + streamId + '/' + eventNumber + '?format=json', function(err, snapshot) {
-    //console.log(err, snapshot);
-    done(err, snapshot);
-  });
+  connection.readStreamEventsBackward(
+    streamId, // stream id 
+    eventNumber, // fromEventNumber
+    1, // maxCount
+    false, // resolveLinks
+    false, // requiremaster
+    null,
+    credentials,
+    function(response){ 
+      done(null, response.events[0].data); 
+    }
+  );
 }
 
 
