@@ -1,4 +1,4 @@
-#EventStore objects
+## EventStore objects
 
 EARLY ALPHA STAGE, DON'T USE IT IN PRODUCTION!
 
